@@ -1,0 +1,4 @@
+Event(Mary,./prod?=1,1662952312205)
+Event(Bob,./fav,1662952313229)
+Event(Mary,./fav,1662952314233)
+Event(Cary,./prod?=1,1662952315241)
