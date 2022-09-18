@@ -2,7 +2,8 @@ package com.flat.ch09
 
 import com.flat.ch05.{ClickSource, Event}
 import org.apache.flink.api.common.functions.{AggregateFunction, ReduceFunction, RichFlatMapFunction}
-import org.apache.flink.api.common.state.{AggregatingState, AggregatingStateDescriptor, ListState, ListStateDescriptor, MapState, MapStateDescriptor, ReducingState, ReducingStateDescriptor, ValueState, ValueStateDescriptor}
+import org.apache.flink.api.common.state.{AggregatingState, AggregatingStateDescriptor, ListState, ListStateDescriptor, MapState, MapStateDescriptor, ReducingState, ReducingStateDescriptor, StateTtlConfig, ValueState, ValueStateDescriptor}
+import org.apache.flink.api.common.time.Time
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
@@ -30,7 +31,13 @@ object KeyedStateTest {
     var aggregateState: AggregatingState[Event, String] = _
 
     override def open(parameters: Configuration): Unit = {
-      valueState = getRuntimeContext.getState(new ValueStateDescriptor[Event]("my-value", classOf[Event]))
+      val ttlConf = StateTtlConfig.newBuilder(Time.minutes(5))
+        .setUpdateType(StateTtlConfig.UpdateType.OnReadAndWrite)
+        .setStateVisibility(StateTtlConfig.StateVisibility.ReturnExpiredIfNotCleanedUp)
+        .build()
+      val valueStateDes = new ValueStateDescriptor[Event]("my-value", classOf[Event])
+      valueStateDes.enableTimeToLive(ttlConf)
+      valueState = getRuntimeContext.getState(valueStateDes)
       listState = getRuntimeContext.getListState(new ListStateDescriptor[Event]("my-list", classOf[Event]))
       mapState = getRuntimeContext.getMapState(new MapStateDescriptor[String, Long]("my-map", classOf[String], classOf[Long]))
 
