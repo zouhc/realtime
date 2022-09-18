@@ -31,12 +31,13 @@ object KeyedStateTest {
     var aggregateState: AggregatingState[Event, String] = _
 
     override def open(parameters: Configuration): Unit = {
-      val ttlConf = StateTtlConfig.newBuilder(Time.minutes(5))
+      val ttlConf = StateTtlConfig.newBuilder(Time.minutes(5)) // 只支持处理时间
         .setUpdateType(StateTtlConfig.UpdateType.OnReadAndWrite)
         .setStateVisibility(StateTtlConfig.StateVisibility.ReturnExpiredIfNotCleanedUp)
         .build()
       val valueStateDes = new ValueStateDescriptor[Event]("my-value", classOf[Event])
       valueStateDes.enableTimeToLive(ttlConf)
+      
       valueState = getRuntimeContext.getState(valueStateDes)
       listState = getRuntimeContext.getListState(new ListStateDescriptor[Event]("my-list", classOf[Event]))
       mapState = getRuntimeContext.getMapState(new MapStateDescriptor[String, Long]("my-map", classOf[String], classOf[Long]))
