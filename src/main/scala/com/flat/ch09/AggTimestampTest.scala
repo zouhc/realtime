@@ -1,6 +1,5 @@
 package com.flat.ch09
 
-import apple.laf.JRSUIState.ValueState
 import com.flat.ch05.{ClickSource, Event}
 import org.apache.flink.api.common.functions.{AggregateFunction, RichFlatMapFunction}
 import org.apache.flink.api.common.state.{AggregatingStateDescriptor, ValueStateDescriptor}
