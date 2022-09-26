@@ -5,11 +5,8 @@ import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
 
-import scala.+:
-import scala.collection.convert.ImplicitConversions._
-
-case class Action(userName: String, action: String)
-case class Pattern(action1: String, action2: String, isActive: Boolean)
+case class Action(userName: String, action: String, role: String)
+case class Pattern(action1: String, action2: String, isActive: Boolean, role: String)
 
 
 object BroadcastStateTest {
@@ -19,25 +16,19 @@ object BroadcastStateTest {
 
     // 定义数据流，读取用户行为事件
     val actionStream = env.fromElements(
-      Action("Bob", "login"),
-      Action("Bob", "buy"),
-      Action("Alice", "login"),
-      Action("Alice", "pay"),
-      Action("Bob", "login"),
-      Action("Bob", "buy"),
-      Action("Bob", "login"),
-      Action("Bob", "addcart"),
-      Action("Bob", "login"),
-      Action("Bob", "buy"),
-      Action("Bob", "login"),
-      Action("Bob", "buy"),
+      Action("Bob", "login", "admin"),
+      Action("Bob", "buy", "admin"),
+      Action("Alice", "login", "admin"),
+      Action("Alice", "pay", "admin"),
+      Action("Bob", "login", "normal"),
+      Action("Bob", "addcart", "normal"),
     )
 
     // 定义规则流，读取指定的行为模式
     val patternStream = env.fromElements(
-      Pattern("login", "pay", true),
-      Pattern("login", "buy", true),
-      Pattern("login", "addcart", false),
+      Pattern("login", "pay", true, "admin"),
+      Pattern("login", "buy", true, "admin"),
+      Pattern("login", "addcart", false, "normal"),
     )
 
     // 定义广播状态描述符
@@ -45,7 +36,7 @@ object BroadcastStateTest {
     val broadcastStream = patternStream.broadcast(patterns)
 
     // 连接两种流
-    actionStream.keyBy(_.userName)
+    actionStream.keyBy(data => data.userName + "_" + data.role)
       .connect(broadcastStream)
       .process(new PatternEvaluation)
       .print()
@@ -67,7 +58,7 @@ object BroadcastStateTest {
       if (patterns != null) {
         for (pattern <- patterns) {
           if (pattern != null && preAction != null) {
-            if (pattern.action1 == preAction.action && pattern.action2 == in1.action) {
+            if (pattern.action1 == preAction.action && pattern.action2 == in1.action && pattern.role == in1.role) {
               collector.collect(s" KEY：${readOnlyContext.getCurrentKey}, 用户名：${in1.userName}, pattern: ${pattern}")
             }
           }
